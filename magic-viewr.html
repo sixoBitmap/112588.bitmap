@@ -4,8 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Magic Cards - Matrix Mode</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: 'OrbitronLocal';
+      src: local('Orbitron'), local('Arial Black'), local('Consolas'), local('Courier New');
+      font-weight: 700;
+    }
+
     :root {
       --bg-color: #000;
       --text-color: #00ff00;
@@ -23,7 +28,7 @@
     }
 
     body {
-      font-family: 'Orbitron', monospace;
+      font-family: 'OrbitronLocal', monospace;
       color: var(--text-color);
       text-shadow: 0 0 8px var(--text-color);
       transition: color 0.2s ease;
@@ -67,7 +72,7 @@
       text-align: center;
       font-size: 1em;
       letter-spacing: 2px;
-      font-family: 'Orbitron', monospace;
+      font-family: 'OrbitronLocal', monospace;
       text-shadow: 0 0 8px var(--text-color);
       box-sizing: border-box;
       z-index: 2;
@@ -85,7 +90,7 @@
       border: 1px solid var(--border-color);
       color: var(--text-color);
       cursor: pointer;
-      font-family: 'Orbitron', monospace;
+      font-family: 'OrbitronLocal', monospace;
       font-size: 1em;
       box-shadow: 0 0 6px var(--border-color);
       transition: all 0.2s ease;
@@ -157,7 +162,7 @@
       background: radial-gradient(circle at 30% 30%, #001100 0%, #000 70%);
       border: 2px solid #00ff00;
       color: #00ff00;
-      font-family: 'Orbitron', monospace;
+      font-family: 'OrbitronLocal', monospace;
       font-size: 1.5em;
       cursor: pointer;
       box-shadow: 0 0 20px #00ff00;
@@ -224,13 +229,7 @@
         <button class="top-right" onmouseover="hoverDisplay('metadata')" onmouseout="hoverClear()" onclick="buttonAction('metadata','metadata')">*</button>
         <button class="bottom-left" onmouseover="hoverDisplay('children')" onmouseout="hoverClear()" onclick="buttonAction('children','children')">.</button>
         <button class="bottom-right" onmouseover="hoverDisplay('parents-inscriptions')" onmouseout="hoverClear()" onclick="buttonAction('parents-inscriptions','parents-inscriptions')">%/#</button>
-
-        <!-- @ button -->
-        <button class="top-center-1" onmouseover="hoverDisplay('content')" onmouseout="hoverClear()" onclick="buttonAction('content','content')">
-          @
-          <span class="lock-icon"></span>
-        </button>
-
+        <button class="top-center-1" onmouseover="hoverDisplay('content')" onmouseout="hoverClear()" onclick="buttonAction('content','content')">@<span class="lock-icon"></span></button>
         <button class="top-center-2" onmouseover="hoverDisplay('undelegated-content')" onmouseout="hoverClear()" onclick="buttonAction('undelegated-content','undelegated-content')">?</button>
         <button class="bottom-center" onmouseover="hoverDisplay('parents')" onmouseout="hoverClear()" onclick="buttonAction('parents','parents')">%</button>
       </div>
@@ -243,8 +242,7 @@
   let lastCopiedText = "";
   let previousInputText = "";
   let originalInputValue = "";
-  let inverted = false;
-
+  let savedId = "";
   const panel = document.getElementById("controlPanel");
   const frame = document.getElementById("resultFrame");
   const input = document.getElementById("inscriptionId");
@@ -278,7 +276,10 @@
   }
 
   function hoverDisplay(text) {
-    if (!originalInputValue) originalInputValue = input.value;
+    if (!originalInputValue) {
+      originalInputValue = input.value;
+      savedId = input.value; // Save real ID before hover
+    }
     input.value = text;
   }
 
@@ -288,10 +289,32 @@
   }
 
   async function buttonAction(type, label) {
+    const id = (savedId || input.value || "").trim().replace(/\s+/g, ""); // ✅ trim + sanitize
+    if (!id) {
+      alert("Please enter an inscription ID.");
+      return;
+    }
+
+    const urls = {
+      content: `https://ordinals.com/content/${id}`,
+      children: `https://ordinals.com/r/children/${id}`,
+      "undelegated-content": `https://ordinals.com/r/undelegated-content/${id}`,
+      inscription: `https://ordinals.com/r/inscription/${id}`,
+      metadata: `https://ordinals.com/r/metadata/${id}`,
+      parents: `https://ordinals.com/r/parents/${id}`,
+      "parents-inscriptions": `https://ordinals.com/r/parents/${id}/inscriptions`
+    };
+
+    const url = urls[type];
+
+    if (type === "content") {
+      window.open(url, "_blank");
+    }
+
     panel.classList.add("hidden");
     frame.classList.add("hidden");
     await glitchEffect(500);
-    await loadFrame(type, label);
+    await loadFrame(url, label);
   }
 
   async function glitchEffect(duration = 500) {
@@ -327,35 +350,10 @@
     root.style.setProperty("--border-color", "#00ff00");
   }
 
-  async function loadFrame(type, label) {
-    const id = input.value.trim();
-    if (!id) {
-      alert("Please enter an inscription ID.");
-      frame.classList.remove("hidden");
-      panel.classList.remove("hidden");
-      return;
-    }
-
-    const urls = {
-      content: `https://ordinals.com/content/${id}`,
-      children: `https://ordinals.com/r/children/${id}`,
-      "undelegated-content": `https://ordinals.com/r/undelegated-content/${id}`,
-      inscription: `https://ordinals.com/r/inscription/${id}`,
-      metadata: `https://ordinals.com/r/metadata/${id}`,
-      parents: `https://ordinals.com/r/parents/${id}`,
-      "parents-inscriptions": `https://ordinals.com/r/parents/${id}/inscriptions`,
-    };
-
-    const url = urls[type];
-
-    // ✅ If it's @ (content) → open new tab but still show text inside iframe
-    if (type === "content") {
-      window.open(url, "_blank");
-    }
-
+  async function loadFrame(url, label) {
     try {
+      url = url.replace(/\s+/g, ""); // ✅ ensure no whitespace in URL
       const res = await fetch(url);
-      const contentType = res.headers.get("content-type") || "";
       const text = await res.text();
       let formattedText = text;
 
@@ -387,50 +385,18 @@
       }
 
       const styledHtml = `
-        <html>
-        <head>
-          <style>
-            html, body {
-              margin: 0; padding: 0; height: 100%; width: 100%;
-              background: black; color: #00ff00;
-              font-family: 'Orbitron', monospace;
-              display: flex; flex-direction: column;
-              align-items: center; justify-content: flex-start;
-            }
-            .header-box {
-              margin-top: 20px;
-              padding: 10px 25px;
-              background: black;
-              border: 1px solid #00ff00;
-              color: #00ff00;
-              font-size: 1.3em;
-              letter-spacing: 2px;
-              text-transform: uppercase;
-              clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
-              box-shadow: 0 0 12px #00ff00;
-              transform: skewX(-15deg);
-              text-shadow: 0 0 10px #00ff00;
-            }
-            pre {
-              white-space: pre-wrap;
-              word-break: break-word;
-              font-size: 1em;
-              text-shadow: 0 0 5px #00ff00;
-              line-height: 1.4em;
-              max-width: 90%;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header-box">${label}</div>
-          <pre>${formattedText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
-          <script>
-            document.addEventListener('copy', () => {
-              parent.postMessage({ type: 'showControlPanel', text: window.getSelection().toString() }, '*');
-            });
-          <\/script>
-        </body>
-        </html>`;
+        <html><head><style>
+        html,body{margin:0;padding:0;height:100%;width:100%;background:black;color:#00ff00;
+        font-family:'Courier New',monospace;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;}
+        .header-box{margin-top:20px;padding:10px 25px;background:black;border:1px solid #00ff00;color:#00ff00;
+        font-size:1.3em;letter-spacing:2px;text-transform:uppercase;clip-path:polygon(10% 0%,100% 0%,90% 100%,0% 100%);
+        box-shadow:0 0 12px #00ff00;transform:skewX(-15deg);text-shadow:0 0 10px #00ff00;}
+        pre{white-space:pre-wrap;word-break:break-word;font-size:1em;text-shadow:0 0 5px #00ff00;line-height:1.4em;max-width:90%;}
+        </style></head><body>
+        <div class="header-box">${label}</div>
+        <pre>${formattedText.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</pre>
+        <script>document.addEventListener('copy',()=>parent.postMessage({type:'showControlPanel',text:window.getSelection().toString()},'*'));<\/script>
+        </body></html>`;
       const blob = new Blob([styledHtml], { type: "text/html" });
       frame.src = URL.createObjectURL(blob);
     } catch {
