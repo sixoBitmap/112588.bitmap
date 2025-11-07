@@ -7,7 +7,7 @@
 <style>
   body { margin: 0; background: #000; color: #ff9900; font-family: Arial, sans-serif; height: 100vh; display: flex; overflow: hidden; }
   #wrapper { display: flex; flex-direction: column; padding: 10px; width: calc(75% - 3px); min-width: 250px; }
-  #editor, #previewFrame { flex: 1;  box-shadow: 0 0 20px 2px #ff9900; border: 2px ridge #ff9900; background: #250326; color: #fff; outline: none; padding: 8px; width: 100%; height: 100%; }
+  #editor, #previewFrame { flex: 1;  box-shadow: 0 0 20px 2px #ff9900; background: #250326; color: #FF66C3; outline: none; padding: 8px; width: 100%; height: 100%; }
   /* Sparkles around main */
 
 @keyframes sparkle {
@@ -15,7 +15,7 @@
   100% { transform: translate(10px, 10px); }
 }
   #previewFrame { display: none; background: #111; }
-  #fileListContainer { flex: 1; overflow-y: auto; border: 1px solid #ff9900; padding: 6px; background: #1a001a; }
+  #fileListContainer { flex: 1; overflow-y: auto;  padding: 6px; background: #1a001a; }
   .file-item.selected { background: #ff9900; color: #000;  }
   button {
   background: linear-gradient(145deg, #d4af37, #8b7500);
@@ -69,6 +69,31 @@ button.airborne {
 
 
 button.jump { animation: jump 0.6s cubic-bezier(0.25, 0.1, 0.3, 5.8); /* ease-in fall */ }
+#deleteBtn {
+  background: linear-gradient(180deg, #e0f7ff 0%, #b3ecff 80%);
+  color: #004466;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-size: 18px;
+  box-shadow:
+    0 0 50px rgba(173, 216, 230, 0.8),     /* stronger outer glow */
+    0 10px 25px rgba(0, 153, 204, 0.5),   /* soft shadow below (floating depth) */
+    inset 0 0 20px rgba(255, 255, 255, 0.8); /* brighter inner light */
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Hover = radiant, heavenly light expansion */
+#deleteBtn:hover {
+  box-shadow:
+    0 0 80px rgba(0, 255, 255, 0.8),
+    0 15px 35px rgba(0, 153, 204, 0.6),
+    inset 0 0 25px rgba(255, 255, 255, 1);
+  background: linear-gradient(180deg, #f8fdff 0%, #d0f6ff 100%);
+  transform: scale(1.04);
+}
+
 
 
 </style>
@@ -154,6 +179,7 @@ button.jump { animation: jump 0.6s cubic-bezier(0.25, 0.1, 0.3, 5.8); /* ease-in
 
   <div id="fileListContainer"></div>
   <button id="deleteBtn" style="background:#00ccff; border:none; border-radius:4px; padding:6px; margin-top:10px;">🌬️</button>
+
 </div>
 
 <script>
@@ -415,8 +441,8 @@ function resolveLocalImports(html) {
   const pinkStyle = `
     <style>
       body {
-        background: linear-gradient(145deg, #9f1d35, #ff3e96);
-        color: #ff66cc;
+        background: linear-gradient(145deg, #FF66C3, #ff3e96);
+        color: #FF66C3;
       }
     </style>
   `;
@@ -585,7 +611,7 @@ loadFileList();
 const footerNote = document.createElement("div");
 footerNote.textContent = "change only the parts you want to change find the parcel with the code and change it be part of the permissionless nft or just be the nft or create with the nft or just fix the code or just break the code whatever you choose it is you you create it congratulation you break it or just bring it to life with the power of ZEUS maybe it is time to find the mother of gods the god that can find you anything you are looking i hope when you will read this you will already part of it otherwise you just became you are experiencing the power of ZEUS have fun and enjoy the -Bitmap Olumpus- this is a text that will be sold for 0.114588 Bitcoin ";
 footerNote.style.position = "fixed";
-footerNote.style.bottom = "15px";
+footerNote.style.bottom = "40px";
 footerNote.style.left = "47%";
 footerNote.style.transform = "translateX(-50%)";
 footerNote.style.color = "#250326";
