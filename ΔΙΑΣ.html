@@ -94,6 +94,79 @@ button.jump { animation: jump 0.6s cubic-bezier(0.25, 0.1, 0.3, 5.8); /* ease-in
   transform: scale(1.04);
 }
 
+#rotatingCircle {
+  width: 42px;
+  height: 42px;
+  
+  /* https://ordinals.com/content/cca247c9f544b1b8e7679d74c427051f8117687fb223c118ad8095f562e29f0fi144 */
+  background-image: url('zeus.png');
+  background-size: cover;
+  background-position: center;
+  border-radius: 50%;
+  box-shadow: 0 0 10px 2px #ff9900, inset 0 0 5px 1px #ff66c3;
+  flex-shrink: 0;
+  /* 🧘 stays still by default */
+  animation: none;
+}
+
+#rotatingCircle.spinning {
+  animation: rotateCircle 2s linear infinite;
+}
+
+@keyframes rotateCircle {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
+/* ⚡ Glowing, fading, divine gradient animation */
+@keyframes deleteShine {
+  0% {
+    background: linear-gradient(90deg, #00ccff, #66ffff, #00ccff);
+    box-shadow:
+      0 0 10px rgba(0, 204, 255, 0.4),
+      0 0 20px rgba(102, 255, 255, 0.3);
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  25% {
+    background: linear-gradient(120deg, #00eaff, #ffffff, #00ccff);
+    box-shadow:
+      0 0 40px rgba(0, 255, 255, 0.8),
+      0 0 80px rgba(255, 255, 255, 0.8);
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  50% {
+    background: linear-gradient(270deg, #00ccff, #99ffff, #ffffff);
+    box-shadow:
+      0 0 60px rgba(0, 255, 255, 1),
+      0 0 120px rgba(255, 255, 255, 0.9);
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  75% {
+    background: linear-gradient(150deg, #00eaff, #ffffff, #00ccff);
+    box-shadow:
+      0 0 40px rgba(0, 255, 255, 0.8),
+      0 0 80px rgba(255, 255, 255, 0.7);
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    background: linear-gradient(90deg, #00ccff, #66ffff, #00ccff);
+    box-shadow:
+      0 0 10px rgba(0, 204, 255, 0.4),
+      0 0 20px rgba(102, 255, 255, 0.3);
+    transform: scale(1);
+    opacity: 0.6;
+  }
+}
+
+/* Apply the animation */
+#deleteBtn.shining {
+  animation: deleteShine 2.2s ease-in-out infinite;
+}
 
 
 </style>
@@ -102,7 +175,7 @@ button.jump { animation: jump 0.6s cubic-bezier(0.25, 0.1, 0.3, 5.8); /* ease-in
 
 <!-- Left: Ordinals Loader and Editor -->
 <div id="wrapper">
-  <h3>⚡ΔΙΑΣ</h3>
+  
   <div style="display:flex; gap:8px; margin-bottom:8px;">
     
   </div>
@@ -117,7 +190,7 @@ button.jump { animation: jump 0.6s cubic-bezier(0.25, 0.1, 0.3, 5.8); /* ease-in
 
     <input id="filename" placeholder="parcel [0.114588.bitmap.html]" style="flex:1; padding:6px; border:1px solid #ff9900; background:#250326; color:#fff; border-radius:4px;">
 
-    <button id="saveBtn" style="background:#ff6600; border:none; border-radius:4px; padding:6px 10px;" >🌪️</button>
+    <button id="saveBtn" style="background:#ff6600; border:none; border-radius:4px; padding:6px 10px;" >🎭</button>
 
     <button id="exportBtn" style="background:#ff9900; border:none; border-radius:4px; padding:6px 10px;"> 🟧</button>
 
@@ -134,8 +207,9 @@ button.jump { animation: jump 0.6s cubic-bezier(0.25, 0.1, 0.3, 5.8); /* ease-in
 
 <!-- Right: Virtual Folder -->
 <div id="right-panel">
-<h4 id="folderHeader" style="display:flex; align-items:center; gap:6px;">
-  <img id="folderIcon" alt="folder icon" style="width:22px; height:22px; border-radius:4px;">
+<h4 id="folderHeader" style="display:flex; align-items:center; gap:10px;">
+  <div id="rotatingCircle"><h3>⚡Δ</h3></div>
+
   <span id="folderLoading"></span>
 </h4>
 <script>
@@ -198,6 +272,7 @@ async function loadOrdinals() {
   if (!bitmapInput.value || bitmapInput.value === "") return alert("Enter BITMAP first");
   const spinner = document.getElementById('folderLoading');
   spinner.style.display = 'inline-block'; // 🌀 show spinner
+  document.getElementById('rotatingCircle').classList.add('spinning');
 
   try {
     const BITMAP = bitmapInput.value.trim() + ".bitmap";
@@ -304,6 +379,7 @@ async function loadOrdinals() {
     console.log("═══════════════════════════════════════════════════════════════");
   } finally {
     spinner.style.display = 'none'; // ✅ hide spinner when done
+    document.getElementById('rotatingCircle').classList.remove('spinning');
   }
 }
 
@@ -400,31 +476,60 @@ async function importFolder() {
     loadFileList();
 
     for (const file of files) {
-      const text = await file.text();
-      localStorage.setItem(file.name, text);
+      let content;
+if (file.type.startsWith("image/") || file.type === "application/pdf") {
+  const blob = file;
+  content = await blobToBase64(blob); // store as base64
+} else {
+  content = await file.text();
+}
+localStorage.setItem(file.name, content);
+
       console.log(`📥 Imported: ${file.name}`);
     }
 
     loadFileList();
-    alert(` 🧱 loaded ${files.length} parcels`);
+    alert(`🧱 Loaded ${files.length} parcels`);
+
+    // 🌸 Automatically set bitmapInput name
+    const firstFile = files[0];
+    if (firstFile && firstFile.webkitRelativePath) {
+      const folderPath = firstFile.webkitRelativePath.split('/')[0];
+      const cleanName = folderPath.replace(/\.bitmap$/i, '');
+      document.getElementById("bitmapInput").value = cleanName;
+      console.log(`🪶 Set bitmapInput → "${cleanName}"`);
+    }
   };
   input.click();
 }
+
 
 
 async function exportFolder() {
   const zip = new JSZip();
   const keys = Object.keys(localStorage);
   if (keys.length === 0) return alert('No parcels to discharge.');
-  for (const k of keys) zip.file(k, localStorage.getItem(k));
+
+  for (const k of keys) {
+    zip.file(k, localStorage.getItem(k));
+  }
+
   const blob = await zip.generateAsync({ type: "blob" });
   const url = URL.createObjectURL(blob);
+
+  // 🌸 Use the bitmapInput value as the file name
+  let name = document.getElementById("bitmapInput").value.trim() + ".bitmap" || ".bitmap";
+  name = name.replace(/[^a-zA-Z0-9._-]/g, "_"); // sanitize
+
   const a = document.createElement('a');
   a.href = url;
-  a.download = "bitmap.zip";
+  a.download = `${name}.zip`;
   a.click();
   URL.revokeObjectURL(url);
+
+  console.log(`💾 Exported ZIP → ${name}.zip`);
 }
+
 
 /* ======== PREVIEW ======== */
 function resolveLocalImports(html) {
@@ -451,12 +556,26 @@ function resolveLocalImports(html) {
 
 function preview() {
   const doc = previewFrame.contentDocument;
-  const resolved = resolveLocalImports(editor.value);
+  const val = editor.value.trim();
+
+  // 📸 If it's a base64 image or PDF, show it directly
+  if (val.startsWith("data:image") || val.startsWith("data:application/pdf")) {
+    doc.open();
+    doc.write(`<body style="margin:0; background:#000; display:flex; align-items:center; justify-content:center;">
+                 <img src="${val}" style="max-width:100%; max-height:100%;">
+               </body>`);
+    doc.close();
+    return;
+  }
+
+  // Otherwise, normal HTML preview
+  const resolved = resolveLocalImports(val);
   editor.classList.add('sparkle');
   doc.open();
   doc.write(resolved);
   doc.close();
 }
+
 
 function showCodeView() {
   editor.style.display = 'block';
@@ -520,16 +639,49 @@ deleteBtn.onclick = () => {
   const sel = document.querySelector('.file-item.selected');
   if (!sel) return alert('Select parcel first');
   const name = sel.textContent;
+
   if (confirm("💀" + name + "💀")) {
+    // 🌟 Start glowing animation
+    deleteBtn.classList.add('shining');
+
+    // Remove file
     localStorage.removeItem(name);
     loadFileList();
     editor.value = '';
+
+    // 💫 Stop animation after 2 seconds
+    setTimeout(() => {
+      deleteBtn.classList.remove('shining');
+    }, 2000);
   }
 };
+
 importBtn.onclick = importFolder;
 exportBtn.onclick = exportFolder;
 codeBtn.onclick = showCodeView;
-previewBtn.onclick = showPreviewView;
+previewBtn.onclick = () => {
+  // 1️⃣ Check if any file is selected
+  let selected = document.querySelector('.file-item.selected');
+  
+  // 2️⃣ If no file selected, select the first one
+  if (!selected) {
+    const first = document.querySelector('.file-item');
+    if (first) {
+      first.classList.add('selected');
+      const key = first.textContent;
+      const value = localStorage.getItem(key);
+      editor.value = value;
+      filename.value = key;
+      console.log(`📂 Auto-selected first file → ${key}`);
+    } else {
+      alert("⚠️ No files in the virtual folder!");
+      return; // stop if no files at all
+    }
+  }
+
+  // 3️⃣ Continue with normal preview logic
+  showPreviewView();
+};
 loadBtn.onclick = () => {
   if (bitmapInput.value) {
     // Random direction and intensity
@@ -624,4 +776,3 @@ document.body.appendChild(footerNote);
 
 </body>
 </html>
-
