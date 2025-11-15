@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>⚡ΔΙΑΣ</title>
+<!-- /content/inscriptionId -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   body { margin: 0; background: #000; color: #ff9900; font-family: Arial, sans-serif; height: 100vh; display: flex; overflow: hidden; }
@@ -89,8 +90,7 @@ button.jump { animation: jump 0.6s cubic-bezier(0.25, 0.1, 0.3, 5.8); /* ease-in
   width: 42px;
   height: 42px;
   
-  /* https://ordinals.com/content/cca247c9f544b1b8e7679d74c427051f8117687fb223c118ad8095f562e29f0fi144 
-  4.114588.bitmap*/
+  /* 3.114588.bitmap */
   background-image: url('https://ordinals.com/content/cca247c9f544b1b8e7679d74c427051f8117687fb223c118ad8095f562e29f0fi144 ');
   background-size: cover;
   background-position: center;
@@ -201,7 +201,12 @@ button.jump { animation: jump 0.6s cubic-bezier(0.25, 0.1, 0.3, 5.8); /* ease-in
 <div id="right-panel">
 <h4 id="folderHeader" style="display:flex; align-items:center; gap:10px;">
   <div id="rotatingCircle"><h3>⚡Δ</h3></div>
-
+  <input id="searchBox" placeholder="search parcels..." 
+       style="margin-bottom:8px; padding:6px; width:100%; border:1px solid #ff9900; background:#250326; color:#fff;">
+  <select id="typeFilter" 
+        style="margin-bottom:8px; padding:6px; width:100%; border:1px solid #ff9900; background:#250326; color:#fff;">
+  <option value="">all types</option>
+</select>
   <span id="folderLoading"></span>
 </h4>
 <script>
@@ -277,6 +282,7 @@ async function loadOrdinals() {
     console.log("🧹 Clearing localStorage for fresh session...");
     localStorage.clear();
     loadFileList();
+updateTypeFilter();
 
     console.log("═══════════════════════════════════════════════════════════════");
     console.log("🚀 STARTING ORDINALS LOADER");
@@ -309,56 +315,93 @@ async function loadOrdinals() {
         const sat = child.sat;
         if (!sat) continue;
 
-        const satUrl = `https://ordinals.com/r/sat/${sat}/at/-1`;
-        console.log(`📡 FETCH → ${satUrl}`);
+        //get /0 and if it is parcel then get /-1
+
+        const satUrl = `https://ordinals.com/r/sat/${sat}/at/0`;
+        console.log(`📡 FETCH key(0) → ${satUrl}`);
         const satData = await fetch(satUrl).then(r => r.json()).catch(() => null);
         if (!satData || !satData.id) continue;
 
         const id = satData.id;
         const contentUrl = `https://ordinals.com/content/${id}`;
-        console.log(`📡 FETCH CONTENT → ${contentUrl}`);
+        console.log(`📡 FETCH CONTENT key(0)→ ${contentUrl}`);
         const response = await fetch(contentUrl).catch(() => null);
         if (!response) continue;
 
-        const mime = response.headers.get("content-type") || "text/plain";
-        let extension = "";
-        if (mime.includes("html")) extension = ".html";
-        else if (mime.includes("javascript")) extension = ".js";
-        else if (mime.includes("css")) extension = ".css";
-        else if (mime.includes("json")) extension = ".json";
-        else if (mime.includes("svg")) extension = ".svg";
-        else if (mime.includes("image/png")) extension = ".png";
-        else if (mime.includes("image/jpeg")) extension = ".jpg";
-        else if (mime.includes("image/gif")) extension = ".gif";
-        else if (mime.includes("text/plain")) extension = ".txt";
-        else if (mime.includes("text/markdown")) extension = ".md";
-        else if (mime.includes("application/pdf")) extension = ".pdf";
-        else extension = "";
+      
+        let content = await response.text();
 
-        // Read as text or base64
-        let content;
-        if (mime.startsWith("image/") || mime === "application/pdf") {
-          const blob = await response.blob();
-          content = await blobToBase64(blob);
-        } else {
-          content = await response.text();
-        }
 
+        console.log(`content: ${content}`);
+        console.log(`parcel: ${parcel}`);
+        console.log(`isAPrcel: ${ordinals}`);
+        console.log(`transaction_count: ${transaction_count}`);
         const number = isParcel(content, parcel, ordinals, transaction_count);
+
         if (number !== null) {
           console.log(`✅ VALID PARCEL FOUND #${number}`);
+          let key = content
 
-          let fileName = content.trim().split('\n')[0].replace(/[<>:"/\\|?*\x00-\x1F]/g, "_").substring(0, 80);
-          if (!fileName) fileName = id;
 
-          if (!fileName.endsWith(extension)) fileName += extension;
 
-          localStorage.setItem(fileName, content);
+
+
+          //find last reinscription to find content
+          //
+          const satUrl = `https://ordinals.com/r/sat/${sat}/at/-1`;
+          console.log(`📡 FETCH value(-1) → ${satUrl}`);
+          const satData = await fetch(satUrl).then(r => r.json()).catch(() => null);
+          if (!satData || !satData.id) continue;
+
+          const id = satData.id;
+          const contentUrl = `https://ordinals.com/content/${id}`;
+          console.log(`📡 FETCH CONTENT value(-1) → ${contentUrl}`);
+          const response = await fetch(contentUrl).catch(() => null);
+          if (!response) continue;
+
+          //find extention for the key from the lastreinscriptionType
+          //
+          const mime = response.headers.get("content-type") || "text/plain";
+          let extension = "";
+          if (mime.includes("html")) extension = ".html";
+          else if (mime.includes("javascript")) extension = ".js";
+          else if (mime.includes("css")) extension = ".css";
+          else if (mime.includes("json")) extension = ".json";
+          else if (mime.includes("svg")) extension = ".svg";
+          else if (mime.includes("image/png")) extension = ".png";
+          else if (mime.includes("image/jpeg")) extension = ".jpg";
+          else if (mime.includes("image/gif")) extension = ".gif";
+          else if (mime.includes("text/plain")) extension = ".txt";
+          else if (mime.includes("text/markdown")) extension = ".md";
+          else if (mime.includes("application/pdf")) extension = ".pdf";
+          else extension = "";
+
+          // Read as text or base64
+          let content2;
+          if (mime.startsWith("image/") || mime === "application/pdf") {
+            const blob = await response.blob();
+            content2 = await blobToBase64(blob);
+          } else {
+            content2 = await response.text();
+          }
+
+
+
+
+
+
+          // let fileName = content.trim().split('\n')[0].replace(/[<>:"/\\|?*\x00-\x1F]/g, "_").substring(0, 80);
+          // if (!fileName) fileName = id;
+
+          // if (!fileName.endsWith(extension)) fileName += extension;
+          let fileName = key+extension;
+          localStorage.setItem(fileName, content2);
           console.log(`💾 Saved file → ${fileName} (${mime})`);
           if (!fileName || fileName.length === 0) return alert("Load BITMAP ");
          
           total++;
           loadFileList();
+updateTypeFilter();
         }
       }
 
@@ -381,6 +424,7 @@ function isParcel(content, parcel, ordinals, txCount) {
   const base = content.replace(parcel, "").trim();
   if (!/^\d+$/.test(base)) return null;
   const num = parseInt(base);
+  console.log(`num: → ${num} `);
   if (!ordinals.has(num) && num <= txCount) {
     ordinals.add(num);
     return num;
@@ -396,15 +440,40 @@ function saveFile() {
   localStorage.setItem(name, editor.value);
   console.log(`💾 Saved file → ${name}`);
   loadFileList();
+updateTypeFilter();
 }
+function updateTypeFilter() {
+  const select = document.getElementById("typeFilter");
+  const keys = Object.keys(localStorage);
+
+  const extensions = new Set();
+
+  keys.forEach(k => {
+    const match = k.match(/\.[a-zA-Z0-9]+$/);
+    if (match) extensions.add(match[0].toLowerCase());
+  });
+
+  // Clear old options (but keep "all types")
+  select.innerHTML = '<option value="">all types</option>';
+
+  [...extensions].sort().forEach(ext => {
+    const op = document.createElement("option");
+    op.value = ext;
+    op.textContent = ext;
+    select.appendChild(op);
+  });
+}
+
 
 function loadFileList() {
   const box = document.getElementById('fileListContainer');
-
   box.innerHTML = '';
   const keys = Object.keys(localStorage);
+
+  const search = document.getElementById("searchBox")?.value.trim().toLowerCase() || "";
+
   if (keys.length === 0) {
-  box.innerHTML = `
+    box.innerHTML = `
     <p style="color:#b8a95d; font-style:italic; white-space:pre-line;">
 Ah… listen, wanderer of the chain. 👀
 
@@ -430,26 +499,82 @@ Perhaps you were meant to find it
 only when you understand
 that you, too, are a parcel of the gods. ⚡
     </p>`;
-  return;
+    return;
+  }
+
+
+
+let filtered = keys;
+
+// 🔎 Text search filter
+if (search !== "") {
+  filtered = filtered.filter(k => {
+    const value = localStorage.getItem(k) || "";
+    return value.toLowerCase().includes(search);
+  });
 }
-  keys.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-  keys.forEach(k => {
+
+// 🗂 Type filter
+const selectedType = document.getElementById("typeFilter").value;
+if (selectedType) {
+  filtered = filtered.filter(k => k.toLowerCase().endsWith(selectedType));
+}
+
+// Sort (numeric when no search, alphabetic when searching)
+if (search === "") {
+  filtered.sort((a, b) => {
+    const numA = parseInt(a.split(".")[0], 10);
+    const numB = parseInt(b.split(".")[0], 10);
+
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    if (!isNaN(numA)) return -1;
+    if (!isNaN(numB)) return 1;
+    return a.localeCompare(b);
+  });
+} else {
+  filtered.sort((a, b) => a.localeCompare(b));
+}
+
+
+  // Show results
+  filtered.forEach(k => {
     const div = document.createElement('div');
     div.textContent = k;
     div.className = 'file-item';
     div.style.cursor = 'pointer';
     div.style.padding = '4px';
-    div.addEventListener('click', () => {
-      document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
-      div.classList.add('selected');
-      const value = localStorage.getItem(k);
-      editor.value = value;
-      filename.value = k;
-      console.log(`📂 Loaded → ${k}`);
-    });
+
+div.addEventListener('click', () => {
+  document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
+  div.classList.add('selected');
+
+  let content = localStorage.getItem(k);
+  let search = document.getElementById("searchBox").value.trim();
+
+  if (search !== "") {
+    content = highlightSearchInEditor(content, search);
+  }
+
+  // Replace highlight markers visually (without touching the real data)
+  editor.value = content.replace(/<<HIGHLIGHT:(.*?)>>/g, (a, b) => b);
+
+  // Apply yellow highlight in textarea
+  setTimeout(() => {
+    const html = editor.value.replace(
+      new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      match => `<mark style="background:yellow; color:black;">${match}</mark>`
+    );
+    previewFrame.contentDocument.body.innerHTML = `<pre>${html}</pre>`;
+  }, 50);
+
+  filename.value = k;
+});
+
+
     box.appendChild(div);
   });
 }
+
 
 /* ======== IMPORT / EXPORT ======== */
 async function importFolder() {
@@ -466,6 +591,7 @@ async function importFolder() {
     console.log("🧹 Clearing localStorage before folder import...");
     localStorage.clear();
     loadFileList();
+updateTypeFilter();
 
     for (const file of files) {
       let content;
@@ -481,6 +607,7 @@ localStorage.setItem(file.name, content);
     }
 
     loadFileList();
+updateTypeFilter();
     alert(`🧱 Loaded ${files.length} parcels`);
 
     // 🌸 Automatically set bitmapInput name
@@ -652,6 +779,7 @@ deleteBtn.onclick = () => {
     // Remove file
     localStorage.removeItem(name);
     loadFileList();
+updateTypeFilter();
     editor.value = '';
 
     // 💫 Stop animation after 2 seconds
@@ -708,7 +836,24 @@ loadBtn.onclick = () => {
   loadOrdinals();
 };
 
+document.getElementById("typeFilter").addEventListener("change", loadFileList);
+document.getElementById("searchBox").addEventListener("input", loadFileList);
+
+
+function highlightSearchInEditor(content, search) {
+  if (!search) return content;
+
+  // Escape regex characters
+  const safe = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const regex = new RegExp(safe, "gi");
+
+  return content.replace(regex, match => `<<HIGHLIGHT:${match}>>`);
+}
+
+
 loadFileList();
+updateTypeFilter();
 </script>
 
 <script>
