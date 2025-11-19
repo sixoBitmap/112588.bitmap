@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fast Infinite Zoom Camera</title>
+
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #000;
+  }
+
+  #camera {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    transform-origin: 0 0;
+  }
+
+  .square {
+    width: 250px;
+    height: 250px;
+    background: #f7931a;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+</style>
+</head>
+<body>
+
+<div id="camera">
+  <div class="square"></div>
+</div>
+
+<script>
+  const camera = document.getElementById("camera");
+
+  // Drag variables
+  let isDragging = false;
+  let startX = 0, startY = 0;
+  let camX = 0, camY = 0;
+
+  // Zoom variables
+  let scale = 1;
+
+  // --- DRAGGING ---
+  document.addEventListener("mousedown", e => {
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+  });
+
+  document.addEventListener("mousemove", e => {
+    if (!isDragging) return;
+    let dx = (e.clientX - startX);
+    let dy = (e.clientY - startY);
+    camera.style.transform = `translate(${camX + dx}px, ${camY + dy}px) scale(${scale})`;
+  });
+
+  document.addEventListener("mouseup", e => {
+    if (!isDragging) return;
+    isDragging = false;
+    camX += e.clientX - startX;
+    camY += e.clientY - startY;
+  });
+
+  // --- SUPER FAST INFINITE ZOOM ---
+  document.addEventListener("wheel", e => {
+    e.preventDefault();
+
+    // Increase this value for faster zoom
+    const zoomIntensity = 0.01;  // 🌟 MUCH FASTER (10x the previous 0.001)
+
+    const delta = e.deltaY;
+
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    const prevScale = scale;
+
+    scale *= delta > 0 ? (1 - zoomIntensity) : (1 + zoomIntensity);
+
+    // Adjust camera to zoom toward mouse
+    camX = mouseX - (mouseX - camX) * (scale / prevScale);
+    camY = mouseY - (mouseY - camY) * (scale / prevScale);
+
+    camera.style.transform = `translate(${camX}px, ${camY}px) scale(${scale})`;
+  }, { passive: false });
+</script>
+
+</body>
+</html>
